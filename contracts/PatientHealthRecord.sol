@@ -120,8 +120,8 @@ contract PatientHealthRecord {
         addressToPatientRecord[msg.sender].patientAge = _age;
     }
 
-    // @notice patients need to approve registered doctors before those doctors can prescribe medication, add new conditions, and view patient medical records.
-    // @param patients enter the doctor ID number.
+    // patients need to approve registered doctors before those doctors can prescribe medication, add new conditions, and view patient medical records.
+    // patients enter the doctor ID number.
     function approveDoctor(uint256 _doctorID)
         external
         validNumber(_doctorID)
@@ -134,7 +134,7 @@ contract PatientHealthRecord {
         approvedDoctors[doctorIdToAddress[_doctorID]][msg.sender] = true;
     }
 
-    // @notice allows registered patients to view their records.  Only registered patients can call this function.
+    // function to allow registered patients to view their records.  Only registered patients can call this function.
     function viewMyRecords()
         external
         view
@@ -144,7 +144,7 @@ contract PatientHealthRecord {
         return addressToPatientRecord[msg.sender];
     }
 
-    // @notice Registered patients can view the full list of registered doctors.  List contains doctor ID and doctor name.  Pateitn can
+    // Registered patients can view the full list of registered doctors.  List contains doctor ID and doctor name.  Pateitn can
     // obtain more information about the doctor (specialty, location) by calling getDoctorDetails() function.
     function viewListOfDoctors()
         public
@@ -155,7 +155,7 @@ contract PatientHealthRecord {
         return doctors;
     }
 
-    // @notice Patients can obtain a readout of the Doctor structure by inputting an integer corresponding to the Doctor ID number.
+    // Patients can obtain a readout of the Doctor structure by inputting an integer corresponding to the Doctor ID number.
     function getDoctorDetails(uint256 _doctorId)
         external
         view
@@ -167,10 +167,9 @@ contract PatientHealthRecord {
         return addressToDoctor[doctor_address];
     }
 
-    // @notice  New doctors register to the network by inputting their name, specialty, and work location.
-    // @dev caller address is checked against the list of registered doctors by checking the verifiedDoctor mapping.
+    // New doctors register to the network by inputting their name, specialty, and work location.
     // A new doctor structure is then created and added to list of doctors with a unique ID nubmer.
-    // @params Doctor name, specialty, and workplace.  Doctor ID  value is automatically assigned with the counter variable.
+    // Doctor name, specialty, and workplace.  Doctor ID  value is automatically assigned with the counter variable.
     function registerNewDoctor(
         string calldata _name,
         string calldata _specialty,
@@ -189,7 +188,7 @@ contract PatientHealthRecord {
         counterDoctorID++;
     }
 
-    // @notice  Approved doctors can add a diagnosis to the patient's list of caseSummaries.
+    // Approved doctors can add a diagnosis to the patient's list of caseSummaries.
     function addCaseSummary(string calldata _newCaseSummary, uint256 patientID)
         external
         onlyDoctor
@@ -211,7 +210,7 @@ contract PatientHealthRecord {
         addressToPatientRecord[patientAddr].examinationResults.push(_newExaminationResult);
     }
 
-    // @notice Doctors can register new medications to the database.
+    // Doctors can register new medications to the database.
     // Doctors need to call on the "addPrescription()" function to add a medication to a patient's prescriptions array.
     function addMedication(
         uint256 _medicationID,
@@ -237,8 +236,8 @@ contract PatientHealthRecord {
         medications.push(medicine);
     }
 
-    // @notice Allows doctors to view a list of currently registered medications
-    // @return an array of Medication structures
+    // Allows doctors to view a list of currently registered medications
+    // return an array of Medication structures
     function viewListofMedications()
         public
         view
@@ -248,8 +247,8 @@ contract PatientHealthRecord {
         return medications;
     }
 
-    // @notice  Patient approved doctors can add medications to Patient structures
-    // @params patient ID number and medication ID number
+    // Patient approved doctors can add medications to Patient structures
+    // patient ID number and medication ID number
     function addPrescription(uint256 _patientID, uint256 _medicineID)
         external
         onlyDoctor
@@ -268,10 +267,10 @@ contract PatientHealthRecord {
         patient.prescriptions.push(medicine);
     }
 
-    // @notice  Approved doctors can call on this function to vie their patient's medical record
-    // @param  function takes in the patient ID number as an input.
-    // @dev  patient ID number if first mapped to the patient's address, which is then mapped to the Patient structure.
-    // @return full patient structure including ID number, name, gender (0 or 1), age, list of conditions, and list of prescriptions.
+    //  Approved doctors can call on this function to vie their patient's medical record
+    //  function takes in the patient ID number as an input.
+  
+    // return full patient structure including ID number, name, gender (0 or 1), age, list of conditions, and list of prescriptions.
     function viewPatientRecords(uint256 _patientID)
         external
         view
