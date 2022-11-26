@@ -1,111 +1,101 @@
-//SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.7;
 
-import "hardhat/console.sol";
 
 contract PatientHealthRecord {
-    // Patient and doctors are assigned ID numbers using a counter.
-
+    //  Patient and doctors are assigned ID numbers using a counter.
     uint256 public counterPatientID = 1;
     uint256 public counterDoctorID = 1;
 
-    // Gender has to be included during registration
-
+    // @dev Enum type for gender could be replaced with string.
+    // Current implementation requires input "0" for male and "1" for female.
     enum Gender {
         MALE,
         FEMALE
     }
 
-    // struct to store Patient Information
-
+    // @notice patient age will unlikely exceed 255, so uint8 is used instead of uint256.
+    // @dev prescriptions array could be replaced with a mapping, though it would be more difficult to iterate components in the front end.
     struct Patient {
         uint256 patientID;
         string patientName;
         Gender patientGender;
         uint8 patientAge;
-        Medication[] prescriptions;
-        string[] examinationResult;
         string[] caseSummaries;
-    } 
+        string[] examinationResults;
+        Medication[] prescriptions;
+    }
 
-    // An admin has to have full access to this array which is struct 
-    // An owner has to be declared
-
+    // @notice Currently this array is not used in the current version of the project.  An admin would have full access to this array,
+    // but implementing an admin in the current implementation would restrict the ability for users to test out the features of the smart contract.
+    // Production implementation will require an admin.
     Patient[] private patients;
-
-    // STRUCT TO STORE DOCTORS INFORMATIONS
 
     struct Doctor {
         uint256 doctorID;
         string doctorName;
         string specialty;
         string workplace;
-        string role;
-        uint256 licenseNos;
     }
 
-    Doctor[] private doctors
+    Doctor[] private doctors;
 
-    // Struct to store medications
-     struct Medication {
+    struct Medication {
         uint256 medicationId;
         string medicationName;
+        string expirationDate;
         string dosage;
         uint256 price;
-     }
-     Medication[] private medications;
+    }
 
-     // Let create a mapping to verify patients and doctors once they register.
-     // The patient should remain private.
+    Medication[] private medications;
 
-     mapping(address => bool) private verifiedPatient;
-     mapping(address=> bool) public verifiedDoctor;
+    //create mappings to verify patients and doctors once they have registered with the registration() functions.  Patient data should always remain private.
+    mapping(address => bool) private verifiedPatient;
+    mapping(address => bool) public verifiedDoctor;
 
-     // Mapping to connect the address of the patients and doctors to their struct. Must still be private for patient.
-     mapping(address => Patient) private addressToPatientRecord;
-     mapping(address => doctor) public addressToDoctor;
+    //connect the address of the patients and doctors to their structures.  MUST be private for patients (no external calling to view the patient data).
+    mapping(address => Patient) private addressToPatientRecord;
+    mapping(address => Doctor) public addressToDoctor;
 
-     // Mapping to connect ID's addresses 
-     mapping(uint256 => address) private patientidToAddress;
-     mapping(uint256 => address) private doctorIdToAddress;
+    //connect ID's to addresses.  Function callers may only have access to ID numbers and not to any addresses. These mapping aid with function execution.
+    mapping(uint256 => address) private patientIdToAddress;
+    mapping(uint256 => address) private doctorIdToAddress;
 
-     // Mapping to list all patient approved by doctors. Patient data must be private
-     mapping(address => mapping(address=>bool)) private approvedDoctors;
+    //list of patient approved doctors using a nested mapping approach (similar to ERC20 approval).  Patient data is always private.
+    mapping(address => mapping(address => bool)) private approvedDoctors;
 
-     // Mapping for medications ID 
-     mapping(uint256=>Medication) public idToMedication;
-     mapping(uint256=>bool) public medicationIdToBool;
+    //medication registry and lookup through medication ID.  Every ID will be unique -- second mapping helps prevent duplicate medicine ID registrations
+    mapping(uint256 => Medication) public idToMedication;
+    mapping(uint256 => bool) public medicationIdToBool;
 
-     // let create our modifier that will allow onlyUsers e.g patients and doctors
-
-     modifier onlyPatient() {
-        require(verifiedPatient[msg.sender] == true, "Only a verified patient has access to this account");
+    modifier onlyPatient() {
+        require(verifiedPatient[msg.sender] == true, "Not a patient!");
         _;
-     }
+    }
 
-     modifier onlyDoctor() {
-        require(verifiedDoctor[msg.sender] == true, "Only a verified doctor can aceess this account");
+    modifier onlyDoctor() {
+        require(verifiedDoctor[msg.sender] == true, "Not a doctor!");
         _;
-     }
+    }
 
-     modifier approvedDoctor(uint256 patientID){
+    modifier approvedDoctor(uint256 patientID) {
         require(
-            approvedDoctors[msg.sender] [patientIdToAddress[patientID]],
-            "Doctor without approval cannot treat the patient!"
+            approvedDoctors[msg.sender][patientIdToAddress[patientID]],
+            "Doctor does not have approval to treat this patient!"
         );
         _;
-     }
+    }
 
-     modifier validNumber(uint256 _number) {
-        require(_number > 0, "Value must be greater than zero!");
+    modifier validNumber(uint256 _number) {
+        require(_number > 0, "Value must be greater than 0!");
         _;
-     }
+    }
 
-     // Functions to be executed 
-
-     // functions to register a new patient
-
-     function registerNewPatient(
+    // @notice Patients register with 3 of 6 inputs of the Patient structure.  Only doctors can add the prescription and conditions components.
+    // @params patient name, gender (0 or 1), age.  ID number is automatically generated by the patient counter.
+    function registerNewPatient(
         string calldata _name,
         Gender _gender,
         uint8 _age
@@ -126,46 +116,48 @@ contract PatientHealthRecord {
         counterPatientID++;
     }
 
-    // Function to allow patients update their age
-    function updateMyAge(uint8 _age) external validNumber(_age) onlyPatient{
+    // @notice Allows a registered patients to update their age.  This is the only parameter in the Patient structure that patients can change.
+    // @param _age is uint8 because age will never exceed 2^8-1
+    function updateMyAge(uint8 _age) external validNumber(_age) onlyPatient {
         addressToPatientRecord[msg.sender].patientAge = _age;
     }
 
-    // Function to allow patient to approve doctors before the doctor can prescribe medications, and view patient medical records.
-    // Patient will enter doctor ID number.
-
-    function approveDoctor(uint256 _doctorId) 
-    external 
-    validNumber(_doctorID)
-    onlyPatient
+    // @notice patients need to approve registered doctors before those doctors can prescribe medication, add new conditions, and view patient medical records.
+    // @param patients enter the doctor ID number.
+    function approveDoctor(uint256 _doctorID)
+        external
+        validNumber(_doctorID)
+        onlyPatient
     {
         require(
-            verifiedDoctor[doctorIdToAddress[_doctorId]] == true;
-            "This doctor is not registered";
+            verifiedDoctor[doctorIdToAddress[_doctorID]] == true,
+            "This doctor is not registered!"
         );
-        approvedDoctors[doctorIdToAddress[_doctorID][msg.sender]] = true;
+        approvedDoctors[doctorIdToAddress[_doctorID]][msg.sender] = true;
     }
 
-    // Function to allow registered patient to view their records. Only Registered patients can call this function
-
-    function viewMyRecord()
-    external
-    view
-    onlyPatient
-    returns (Patient memory){
+    // @notice allows registered patients to view their records.  Only registered patients can call this function.
+    function viewMyRecords()
+        external
+        view
+        onlyPatient
+        returns (Patient memory)
+    {
         return addressToPatientRecord[msg.sender];
     }
 
-    // function to allow patient to view list of medical doctors. Patient can obtain 
-    // more information about the doctor by calling this function
-
-    function viewListOfDoctors()public view onlyPatient returns
-    (Doctor[] memory)
+    // @notice Registered patients can view the full list of registered doctors.  List contains doctor ID and doctor name.  Pateitn can
+    // obtain more information about the doctor (specialty, location) by calling getDoctorDetails() function.
+    function viewListOfDoctors()
+        public
+        view
+        onlyPatient
+        returns (Doctor[] memory)
     {
         return doctors;
     }
 
-    // Patient can also get doctors info just by typing the doctor ID number.
+    // @notice Patients can obtain a readout of the Doctor structure by inputting an integer corresponding to the Doctor ID number.
     function getDoctorDetails(uint256 _doctorId)
         external
         view
@@ -177,7 +169,10 @@ contract PatientHealthRecord {
         return addressToDoctor[doctor_address];
     }
 
-    // Function to create new doctors or where a new doctor can get registered
+    // @notice  New doctors register to the network by inputting their name, specialty, and work location.
+    // @dev caller address is checked against the list of registered doctors by checking the verifiedDoctor mapping.
+    // A new doctor structure is then created and added to list of doctors with a unique ID nubmer.
+    // @params Doctor name, specialty, and workplace.  Doctor ID  value is automatically assigned with the counter variable.
     function registerNewDoctor(
         string calldata _name,
         string calldata _specialty,
@@ -195,19 +190,8 @@ contract PatientHealthRecord {
         doctorIdToAddress[counterDoctorID] = msg.sender;
         counterDoctorID++;
     }
-  
-    //  Function that allow approved doctor to add a diagnosis to the patient's list of Examination Result.
-    function addExaminationResult(string calldata _newExaminationResult, uint256 patientID)
-        external
-        onlyDoctor
-        approvedDoctor(patientID)
-        validNumber(patientID)
-    {
-        address patientAddr = patientIdToAddress[patientID];
-        addressToPatientRecord[patientAddr].examinationResult.push(_newExaminationResult);  // Take note of this function
-    }
 
-     //  Function that allow approved doctor to add to the patient's list of case summaries.
+    // @notice  Approved doctors can add a diagnosis to the patient's list of caseSummaries.
     function addCaseSummary(string calldata _newCaseSummary, uint256 patientID)
         external
         onlyDoctor
@@ -215,10 +199,21 @@ contract PatientHealthRecord {
         validNumber(patientID)
     {
         address patientAddr = patientIdToAddress[patientID];
-        addressToPatientRecord[patientAddr].caseSummaries.push(_newCaseSuumary);
+        addressToPatientRecord[patientAddr].caseSummaries.push(_newCaseSummary);
     }
 
-    // Function that allow Doctors to register new medications to the database.
+    // Approved doctors can add a diagnosis to the patient's list of examinationResults.
+    function addExaminationResult(string calldata _newExaminationResult, uint256 patientID)
+        external
+        onlyDoctor
+        approvedDoctor(patientID)
+        validNumber(patientID)
+    {
+        address patientAddr = patientIdToAddress[patientID];
+        addressToPatientRecord[patientAddr].examinationResults.push(_newExaminationResult);
+    }
+
+    // @notice Doctors can register new medications to the database.
     // Doctors need to call on the "addPrescription()" function to add a medication to a patient's prescriptions array.
     function addMedication(
         uint256 _medicationID,
@@ -244,8 +239,8 @@ contract PatientHealthRecord {
         medications.push(medicine);
     }
 
-    // Function to  allow doctors to view a list of currently registered medications
-    // It will return an array of Medication structures
+    // @notice Allows doctors to view a list of currently registered medications
+    // @return an array of Medication structures
     function viewListofMedications()
         public
         view
@@ -255,8 +250,8 @@ contract PatientHealthRecord {
         return medications;
     }
 
-    //  Patient has to approve doctors that can add medications to Patient structures
-    // Patient will supply patient ID number and medication ID number
+    // @notice  Patient approved doctors can add medications to Patient structures
+    // @params patient ID number and medication ID number
     function addPrescription(uint256 _patientID, uint256 _medicineID)
         external
         onlyDoctor
@@ -275,8 +270,8 @@ contract PatientHealthRecord {
         patient.prescriptions.push(medicine);
     }
 
-    // Function to allow  approved doctors to call on this function to view their patient's medical record
-    // function takes in the patient ID number as an input.
+    // @notice  Approved doctors can call on this function to vie their patient's medical record
+    // @param  function takes in the patient ID number as an input.
     // @dev  patient ID number if first mapped to the patient's address, which is then mapped to the Patient structure.
     // @return full patient structure including ID number, name, gender (0 or 1), age, list of conditions, and list of prescriptions.
     function viewPatientRecords(uint256 _patientID)
@@ -289,7 +284,4 @@ contract PatientHealthRecord {
     {
         return addressToPatientRecord[patientIdToAddress[_patientID]];
     }
-    
-
-
 }

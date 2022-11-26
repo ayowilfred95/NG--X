@@ -1,7 +1,7 @@
 const { assert, expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("PatientHealthRecord", function () {
+describe("PatientHealthRecord unit tests", function () {
   let myContract,
     accounts,
     patient_,
@@ -113,7 +113,7 @@ describe("PatientHealthRecord", function () {
       });
     });
     describe("addCaseSummary", function () {
-      it("allows approved doctors to add CaseSummary to the patient records", async () => {
+      it("allows approved doctors to add caseSummaries to the patient records", async () => {
         //register patient
         await myContract_p.connect(patient_);
         const tx = await myContract_p.registerNewPatient("Bob", 0, 24);
@@ -149,12 +149,12 @@ describe("PatientHealthRecord", function () {
       });
     });
 
-    // check examanation result
+
     describe("addExaminationResult", function () {
-      it("allows approved doctors to add examination result to the patient records", async () => {
+      it("allows approved doctors to add conditions to the patient records", async () => {
         //register patient
         await myContract_p.connect(patient_);
-        const tx = await myContract_p.registerNewPatient("Bob", "Typhoid", "Positive");
+        const tx = await myContract_p.registerNewPatient("Bob", 0, 24);
         await tx.wait();
         //register doctor
         const tx_ = await myContract_d.registerNewDoctor(
@@ -165,7 +165,7 @@ describe("PatientHealthRecord", function () {
         await tx_.wait();
         //have doctor call on function that requires approval -- expect error revert
         await expect(
-          myContract_d.addExaminationResult("Typhoid", "Positive")
+          myContract_d.addExaminationResult("Migraines", 1)
         ).to.be.revertedWith(
           "Doctor does not have approval to treat this patient!"
         );
@@ -173,17 +173,17 @@ describe("PatientHealthRecord", function () {
         await myContract_p.approveDoctor(1);
         //have doctor add diagnoses to the patient's records and verify
         await myContract_d.connect(doctor_);
-        const tx_2 = await myContract_d.addCondition("Type II Diabetes", 1);
+        const tx_2 = await myContract_d.addExaminationResult("Type II Diabetes", 1);
         await tx_2.wait();
-        const tx_3 = await myContract_d.addCondition("Asthma", 1);
+        const tx_3 = await myContract_d.addExaminationResult("Asthma", 1);
         await tx_3.wait();
         const results = await myContract_d.viewPatientRecords(1);
-        assert.equal(results.conditions[0], "Type II Diabetes");
-        assert.equal(results.conditions[1], "Asthma");
+        assert.equal(results.caseSummaries[0], "Type II Diabetes");
+        assert.equal(results.caseSummaries[1], "Asthma");
         //have patient verify diagnosis
         const results_2 = await myContract_p.viewMyRecords();
-        assert.equal(results_2.conditions[0], "Type II Diabetes");
-        assert.equal(results_2.conditions[1], "Asthma");
+        assert.equal(results_2.examinationResults[0], "Type II Diabetes");
+        assert.equal(results_2.examinationResults[1], "Asthma");
       });
     });
     // checks both addMedication() and viewListofMedications()
