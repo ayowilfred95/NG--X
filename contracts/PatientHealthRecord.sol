@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.7;
 
 import "hardhat/console.sol";
 
@@ -25,7 +25,7 @@ contract PatientHealthRecord {
         uint8 patientAge;
         Medication[] prescriptions;
         string[] examinationResult;
-        string[] caseSummaries
+        string[] caseSummaries;
     } 
 
     // An admin has to have full access to this array which is struct 

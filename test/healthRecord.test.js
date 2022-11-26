@@ -1,7 +1,7 @@
 const { assert, expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("PatientRecord unit tests", function () {
+describe("PatientHealthRecord", function () {
   let myContract,
     accounts,
     patient_,
@@ -16,7 +16,7 @@ describe("PatientRecord unit tests", function () {
     patient_ = accounts[1];
     doctor_ = accounts[2];
 
-    const contract = await ethers.getContractFactory("PatientRecord", deployer);
+    const contract = await ethers.getContractFactory("PatientHealthRecord", deployer);
     myContract = await contract.deploy();
     myContract_p = myContract.connect(patient_);
     myContract_d = myContract.connect(doctor_);
