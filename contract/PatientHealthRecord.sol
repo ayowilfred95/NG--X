@@ -23,7 +23,6 @@ contract PatientHealthRecord {
         string patientName;
         Gender patientGender;
         uint8 patientAge;
-        string[] conditions;
         Medication[] prescriptions;
         string[] examinationResult;
         string[] caseSummaries
@@ -196,16 +195,7 @@ contract PatientHealthRecord {
         doctorIdToAddress[counterDoctorID] = msg.sender;
         counterDoctorID++;
     }
-    //  Function that allow approved doctor to add a diagnosis to the patient's list of conditions.
-    function addCondition(string calldata _newCondition, uint256 patientID)
-        external
-        onlyDoctor
-        approvedDoctor(patientID)
-        validNumber(patientID)
-    {
-        address patientAddr = patientIdToAddress[patientID];
-        addressToPatientRecord[patientAddr].conditions.push(_newCondition);
-    }
+  
     //  Function that allow approved doctor to add a diagnosis to the patient's list of Examination Result.
     function addExaminationResult(string calldata _newExaminationResult, uint256 patientID)
         external
