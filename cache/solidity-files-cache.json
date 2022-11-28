@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/wilfred/Documents/GitHub/NG--X/contracts/PatientHealthRecord.sol": {
-      "lastModificationDate": 1669475215383,
-      "contentHash": "ecc74128b1d90a7f58350391a5efed19",
+      "lastModificationDate": 1669598104238,
+      "contentHash": "94b5682cd1f46930662b783c24dda39f",
       "sourceName": "contracts/PatientHealthRecord.sol",
       "solcConfig": {
         "version": "0.8.17",
